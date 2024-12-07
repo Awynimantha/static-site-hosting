@@ -5,6 +5,12 @@ terraform {
       version = ">= 3.0.0"
     }
   }
+  backend "azurerm" {
+    resource_group_name  = "tfstate"
+    storage_account_name = "tfstate1llwj"
+    container_name       = "tfstate"
+    key                  = "terraform.tfstate"
+  }
   required_version = ">= 0.12"
 }
 
@@ -13,46 +19,55 @@ provider "azurerm" {
   subscription_id = "be4d1a97-5702-4ad8-bcac-d4a969a1252e"
 }
 
-resource "azurerm_resource_group" "example" {
-    name = "example-resource"
+resource "azurerm_resource_group" "webhosting" {
+    name = "static-web"
     location = "Central India"
 }
 
-resource "azurerm_virtual_network" "example" {
-    name = "example-network"
+resource "azurerm_virtual_network" "webhosting" {
+    name = "new-network"
     address_space = ["10.0.0.0/16"]
-    location = azurerm_resource_group.example.location
-    resource_group_name = azurerm_resource_group.example.name
+    location = azurerm_resource_group.webhosting.location
+    resource_group_name = azurerm_resource_group.webhosting.name
 }
 
-resource "azurerm_subnet" "example" {
-  name                 = "example-subnet"
-  resource_group_name  = azurerm_resource_group.example.name
-  virtual_network_name = azurerm_virtual_network.example.name
+resource "azurerm_subnet" "webhosting" {
+  name                 = "new-subnet"
+  resource_group_name  = azurerm_resource_group.webhosting.name
+  virtual_network_name = azurerm_virtual_network.webhosting.name
   address_prefixes     = ["10.0.1.0/24"]
 }
 
-resource "azurerm_network_interface" "example" {
-  name                = "example-nic"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+resource "azurerm_public_ip" "webhosting" {
+  name                = "webhosting-public-ip"
+  resource_group_name = azurerm_resource_group.webhosting.name
+  location            = "Central India"
+  allocation_method   = "Static"
+  sku                 = "Standard"
+}
+
+resource "azurerm_network_interface" "webhosting" {
+  name                = "new-nic"
+  location            = azurerm_resource_group.webhosting.location
+  resource_group_name = azurerm_resource_group.webhosting.name
 
   ip_configuration {
     name                          = "internal"
-    subnet_id                     = azurerm_subnet.example.id
+    subnet_id                     = azurerm_subnet.webhosting.id
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.webhosting.id
   }
 }
 
-resource "azurerm_virtual_machine" "example" {
-  name                  = "example-vm"
-  location              = azurerm_resource_group.example.location
-  resource_group_name   = azurerm_resource_group.example.name
-  network_interface_ids = [azurerm_network_interface.example.id]
+resource "azurerm_virtual_machine" "webhosting" {
+  name                  = "hosting-vm"
+  location              = azurerm_resource_group.webhosting.location
+  resource_group_name   = azurerm_resource_group.webhosting.name
+  network_interface_ids = [azurerm_network_interface.webhosting.id]
   vm_size               = "Standard_B1s" # Adjust size as needed
 
   storage_os_disk {
-    name              = "example-os-disk"
+    name              = "hosting-os-disk"
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"  
@@ -66,7 +81,7 @@ resource "azurerm_virtual_machine" "example" {
   }
 
   os_profile {
-    computer_name  = "example-vm"
+    computer_name  = "hosting-vm"
     admin_username = "azureuser"
     admin_password = "helloworld1!" # Replace with a secure password
   }
