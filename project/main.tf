@@ -31,6 +31,7 @@ resource "azurerm_virtual_network" "webhosting" {
     resource_group_name = azurerm_resource_group.webhosting.name
 }
 
+
 resource "azurerm_subnet" "webhosting" {
   name                 = "new-subnet"
   resource_group_name  = azurerm_resource_group.webhosting.name
@@ -58,6 +59,49 @@ resource "azurerm_network_interface" "webhosting" {
     public_ip_address_id          = azurerm_public_ip.webhosting.id
   }
 }
+
+resource "azurerm_network_security_group" "example" {
+  name                = "example-nsg"
+  location            = azurerm_resource_group.webhosting.location
+  resource_group_name = azurerm_resource_group.webhosting.name
+
+  security_rule {
+    name                       = "AllowSSH"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "AllowHTTP"
+    priority                   = 200
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "AllowHTTPS"
+    priority                   = 300
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}
+
 
 resource "azurerm_virtual_machine" "webhosting" {
   name                  = "hosting-vm"
@@ -90,4 +134,3 @@ resource "azurerm_virtual_machine" "webhosting" {
     disable_password_authentication = false
   }
 }
-
