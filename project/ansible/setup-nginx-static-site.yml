@@ -1,0 +1,134 @@
+- name: Set up Nginx and host a static website
+  hosts: azure_vps
+  become: true
+
+  tasks:
+    - name: Update the apt package index
+      apt:
+        update_cache: yes
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Start and enable Nginx service
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Create the web root directory
+      file:
+        path: /var/www/static-site
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Copy static website files
+      copy:
+        src: ./static-site/
+        dest: /var/www/static-site/
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Configure Nginx for the static website
+      copy:
+        dest: static-site/index.html
+        content: |
+          server {
+              listen 80;
+              server_name _;
+              root /var/www/static-site;
+              index index.html;
+
+              location / {
+                  try_files $uri $uri/ =404;
+              }
+          }
+      notify: Restart Nginx
+
+    - name: Enable the Nginx site configuration
+      file:
+        src: /etc/nginx/sites-available/static-site
+        dest: /etc/nginx/sites-enabled/static-site
+        state: link
+
+    - name: Remove the default Nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+  handlers:
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
+
+
+  tasks:
+    - name: Update the apt package index
+      apt:
+        update_cache: yes
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Start and enable Nginx service
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Create the web root directory
+      file:
+        path: /var/www/static-site
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Copy static website files
+      copy:
+        src: ./static-site/
+        dest: /var/www/static-site/
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Configure Nginx for the static website
+      copy:
+        dest: /etc/nginx/sites-available/static-site
+        content: |
+          server {
+              listen 80;
+              server_name _;
+              root /var/www/static-site;
+              index index.html;
+
+              location / {
+                  try_files $uri $uri/ =404;
+              }
+          }
+      notify: Restart Nginx
+
+    - name: Enable the Nginx site configuration
+      file:
+        src: /etc/nginx/sites-available/static-site
+        dest: /etc/nginx/sites-enabled/static-site
+        state: link
+
+    - name: Remove the default Nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+  handlers:
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted

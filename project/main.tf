@@ -127,7 +127,7 @@ resource "azurerm_virtual_machine" "webhosting" {
   os_profile {
     computer_name  = "hosting-vm"
     admin_username = "azureuser"
-    admin_password = "helloworld1!" # Replace with a secure password
+    admin_password = var.password
   }
 
   os_profile_linux_config {
